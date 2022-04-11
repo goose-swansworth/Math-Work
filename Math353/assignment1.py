@@ -7,14 +7,19 @@ plt.rcParams['font.family'] = 'serif'
 plt.rcParams['mathtext.fontset'] = 'cm'
 plt.style.use('ggplot')
 
+#--------------------------------------------------------------------------------------------------#
+#----------------------Helper functions for ploting and root finding-------------------------------#
+#--------------------------------------------------------------------------------------------------#
 
-def plot_values(x, y, xlabel, ylabel, plot_label, title, color=None, xlim=None, ylim=None):
+def plot_values(plot_tups, xlabel="", ylabel="", plot_label="", title="", color=None, xlim=None, ylim=None):
     """General plotting function"""
     axes = plt.axes()
-    if color is not None:
-        axes.plot(x, y, label=plot_label, color=color)
-    else:
-        axes.plot(x, y, label=plot_label)
+    for tup in plot_tups:
+        x, y, label = tup
+        if color is not None:
+            axes.plot(x, y, label=label, color=color)
+        else:
+            axes.plot(x, y, label=label)
     axes.set_xlabel(xlabel)
     axes.set_ylabel(ylabel)
     axes.set_title(title)
@@ -22,6 +27,7 @@ def plot_values(x, y, xlabel, ylabel, plot_label, title, color=None, xlim=None, 
         axes.set_xlim(xlim)
     if ylim is not None:
         axes.set_ylim(ylim)
+    plt.legend(loc="best", prop={'size': 15})
     return axes
 
 
@@ -73,6 +79,42 @@ def newton_method_num_jac(F, x0, tol, max_iterations):
         i += 1
     return xk_s, i
 
+
+def falsi_helper(x_ks, f):
+    """Return maximim x_k_prime such that f(x_k)f(x_k_prime) < 0"""
+    i = len(x_ks) - 1
+    x_k = x_ks[i]
+    x_k_prime = x_ks[i - 1]
+    found = False
+    while not found:
+        sign = f(x_k)*f(x_k_prime)
+        if sign <= 0:
+            found = True
+        else:
+            i -= 1
+            x_k_prime = x_ks[i - 1]
+    return x_k_prime
+
+
+def regular_falsi(interval, f, tol, max_iters):
+    a, b = interval
+    x_ks = []
+    x_ks.append(b)
+    x_ks.append(a)
+    x_k = a
+    i = 0
+    while abs(f(x_k)) > tol and i < max_iters:
+        x_k_prime = falsi_helper(x_ks, f)
+        qk = (f(x_k) - f(x_k_prime)) / (x_k - x_k_prime)
+        x_k = x_k - (1/qk)*f(x_k)
+        i += 1
+        x_ks.append(x_k)
+    return x_k
+
+#-----------------------------------------------------------------------------------------------------#
+#--------------------------------------Assignment Code------------------------------------------------#
+#-----------------------------------------------------------------------------------------------------#
+
 def pressure_system(x):
     """P(x) Function for approximating x1, x2, x3. p and r are 3-tuples with experimental constants"""
     x1, x2, x3 = x
@@ -85,7 +127,7 @@ def pressure_system(x):
 
 
 def assignment_1():
-    x0 = [100, 10, 100]
+    x0 = [1/2, 1/2, 1/2]
     tolerance = 10**-4
     xspace = np.linspace(-10, 10, 100)
 
@@ -116,46 +158,7 @@ def recursive_func_sequnce(n, s0, i0, beta, N, gamma):
     return Sns, Ins
 
 
-def assignment_2_a():
-    #constants
-    N = 157759
-    beta = 3.9928
-    gamma = 3.517
-    s0 = N*0.88 - 3
-    i0 = 3
-    T_max = 48
-    Sns, Ins = recursive_func_sequnce(T_max, s0, i0, beta, N, gamma)
-    print(f"Max number of I_n: {max(Ins)} at week {Ins.index(max(Ins))}")
-    print(f"Total num Inf: {sum(Ins)}")
-    #plot Sn and In
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-    fig.suptitle("Iterative SIR Model")
-    ax1.plot(range(len(Sns)), Sns, label=r"$S_n$", color="tab:green")
-    ax2.plot(range(len(Ins)), Ins, label=r"$I_n$", color="tab:purple")
-    ax1.legend(loc="best")
-    ax2.legend(loc="best")
-    plt.show()
-
-def assignment_2_bi():
-    #constants
-    N = 157759
-    beta = 3.9928
-    gamma = 3.517
-    i0 = 3
-    T_max = 48
-    #plot In for various values of v_prop
-    plt.title("Infected numbers with different vaxination proportions")
-    temp = None
-    for v_prop in range(2, 14, 2):
-        Ins_v = recursive_func_sequnce(T_max, (1-v_prop/100)*N-i0, i0, beta, N, gamma)[1]
-        plt.plot(range(len(Ins_v)), Ins_v, label=f"{v_prop}%")
-        temp = max(Ins_v)
-    plt.legend(loc="best")
-    plt.ylabel(r"$I_n$")
-    plt.xlabel(r"$n$")
-    plt.show()
-
-def assignment_2_bii():
+def assignment_2():
     #constants
     N = 157759
     beta = 3.9928
@@ -163,23 +166,39 @@ def assignment_2_bii():
     i0 = 3
     s0 = N - i0
     T_max = 48
-    #plot In for various values of B_q
-    Ins = recursive_func_sequnce(T_max, s0, i0, beta, N, gamma)[1]
-    plt.title("Infected numbers with different contact rates")
+    Sns, Ins = recursive_func_sequnce(T_max, s0, i0, beta, N, gamma)
+    print(f"Max number of I_n: {max(Ins)} at week {Ins.index(max(Ins))}")
+    print(f"Total num Inf: {sum(Ins)}")
+
+    #part a
+    plot_values([(range(len(Sns)), Sns, "")], xlabel=r"$n$", ylabel=r"$S_n$", color="tab:green")
+    plt.show()
+    plot_values([(range(len(Ins)), Ins, "")], xlabel=r"$n$", ylabel=r"$I_n$", color="tab:purple")
+    plt.show()
+
+    #part b i
+    plots = []
+    for v_prop in range(2, 14, 2):
+        Ins_v = recursive_func_sequnce(T_max, (1-v_prop/100)*N-i0, i0, beta, N, gamma)[1]
+        plots.append((range(len(Ins_v)), Ins_v, f"{v_prop}% vaxination"))
+    plot_values(plots, xlabel=r"$n$", ylabel=r"$I_n$")
+    plt.show()
+
+    #part b ii
+    plots = []
     for bq in range(2, 14, 2):
         Ins = recursive_func_sequnce(T_max, s0, i0, (1-bq/100)*beta, N, gamma)[1]
-        plt.plot(range(len(Ins)), Ins, label=f"|β - γ| = {abs((1-bq/100)*beta - gamma):.3f}")
-    plt.legend(loc="best")
-    plt.xlabel(r"$n$")
-    plt.ylabel(r"$I_n$")
+        plots.append((range(len(Ins)), Ins, f"|β - γ| = {abs((1-bq/100)*beta - gamma):.3f}"))
+    plot_values(plots, xlabel=r"$n$", ylabel=r"$I_n$")
     plt.show()
+
 
 
 def mu(gamma_dot, mu_inf_mu_0, lambd, n):
     """Non-linear function of gamma_dot, the measure of the deformation of the material"""
     return mu_inf_mu_0 + (1 - mu_inf_mu_0)*(1 + (lambd*gamma_dot)**2)**((n - 1) / 2)
 
-def assignment_3_b():
+def assignment_3():
     #constants
     mu_inf_mu_0 = 0.01
     lambd = 0
@@ -188,19 +207,45 @@ def assignment_3_b():
     #part b
     y_f = linspace(0, 1, 201)
     gamma_f = y_f / mu(1, mu_inf_mu_0, lambd, 1) #gamma_dot and n are arbitrary when lambda = 0
-    plot_values(y_f, gamma_f, r"$y_f$", r"$\dot\gamma_f$", "", "")
+    plot_values([(y_f, gamma_f, "")], r"$y_f$", r"$\dot\gamma_f$", "", "")
     plt.show()
 
     #part c
     u_N = [trapz(gamma_f[i:], y_f[i:]) for i in range(len(y_f))]
-    max_u = max(u_N)
-    plot_values(y_f, [u_N[i] / max_u for i in range(len(u_N))], r"$y_f$", r"$u(y_f) / \max\{u\}$", "", "")
+    max_uN = max(u_N)
+    plot_values([(y_f, u_N / max_uN, r"$u(y_f)$")], xlabel=r"$y_f$", ylabel=r"$u(y_f) / \max\{u\}$", color="tab:blue")
     plt.show()
 
     #part d
     u_exact = [u(y) for y in y_f]
     error = [abs(u_N[i] - u_exact[i]) for i in range(len(u_exact))]
-    plot_values(y_f, error, r"$y_f$", r"$|u_N - u|$", "", "")
+    plot_values([(y_f, error, "")], r"$y_f$", r"$|u_N - u|$", "", "", color="tab:green")
     plt.show()
 
-assignment_3_b()
+    #part e
+    lambd = 10
+    n = 1/4
+    tolerance = 10**-8
+    max_iterations = 100
+    gamma_dot_func_p = lambda g: mu_inf_mu_0 + (1-mu_inf_mu_0)*(1+(lambd*g)**2)**((n-1)/2) + g*((n-1)/2*(1-mu_inf_mu_0)*((1+(lambd*g)**2)**((n-3)/2))*(2*g*lambd**2)) 
+    gamma_f = []
+    for yf_i in y_f: #find gamma dot
+        gamma_dot_func = lambda gamma_dot: mu(gamma_dot, mu_inf_mu_0, lambd, n) * gamma_dot - yf_i
+        gamma_f_i = newton_method(gamma_dot_func,gamma_dot_func_p, 10, tolerance, max_iterations)[0][-1] #regular_falsi((-100, 0), gamma_dot_func, tolerance, max_iterations)
+        gamma_f.append(gamma_f_i)
+    plot_values([(y_f, gamma_f, "")], xlabel=r"$y_f$", ylabel=r"$\dot\gamma$", color="tab:purple")
+    plt.show()
+
+    u_NN = array([trapz(gamma_f[i:], y_f[i:]) for i in range(len(y_f))]) #finding u(y)
+    max_uNN = max(u_NN)
+    plot_values([(y_f, u_NN / max_uNN, "")], xlabel=r"$y_f$", ylabel=r"$u(y_f) / \max\{u\}$", color="tab:orange")
+    plt.show()
+
+    plot_values([(y_f, u_N/ max_uN, "Newtonian"), (y_f, u_NN / max_uNN, "Non Newtonian")], xlabel=r"$y_f$", ylabel=r"$u(y)$")
+    plt.show()
+
+
+
+
+
+assignment_3()
