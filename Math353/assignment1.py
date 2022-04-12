@@ -1,17 +1,19 @@
 import matplotlib.pyplot as plt
-from numpy import exp, array, matrix, linspace, trapz
 import numpy as np
-from numpy.linalg import norm, solve, det
+from numpy import exp, array, linspace, trapz
+from numpy.linalg import norm, solve, LinAlgError
+from random import randint
 
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['mathtext.fontset'] = 'cm'
 plt.style.use('ggplot')
 
-#--------------------------------------------------------------------------------------------------#
-#----------------------Helper functions for ploting and root finding-------------------------------#
-#--------------------------------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
+#--------------Helper functions for ploting and root finding------------------#
+#-----------------------------------------------------------------------------#
 
-def plot_values(plot_tups, xlabel="", ylabel="", plot_label="", title="", color=None, xlim=None, ylim=None):
+def plot_values(plot_tups, xlabel="", ylabel="", title="",
+                color=None, xlim=None, ylim=None):
     """General plotting function"""
     axes = plt.axes()
     for tup in plot_tups:
@@ -30,9 +32,28 @@ def plot_values(plot_tups, xlabel="", ylabel="", plot_label="", title="", color=
     plt.legend(loc="best", prop={'size': 15})
     return axes
 
-
+def find_sign_changes(f, x_min, x_max, min_step):
+    """Return intervals (a, b) where f changes sign"""
+    found = False
+    step = 1
+    result_intervals = []
+    while step > min_step:
+        x = x_min
+        while x <= x_max and not found:
+            if f(x) * f(x + step) < 0:
+                found = True
+                result_intervals.append((x, x + step))
+                x_min = x + step
+            else:
+                x += step
+        if x > x_max and not found:
+            step = step / 2
+        else:
+            found = False
+    return result_intervals
 
 def numerical_jacobian(x, F):
+    """Numerical Approximation of Jf(x) - From Lab 2"""
     n = len(x)
     J = np.zeros((n, n))
     x_nh = x.copy()
@@ -43,7 +64,6 @@ def numerical_jacobian(x, F):
         x_nh = x.copy()
     return J
 
-
 def newton_method(f, f_prime, xk, tol, max_iters):
     x_ks = []
     x_ks.append(xk)
@@ -53,19 +73,6 @@ def newton_method(f, f_prime, xk, tol, max_iters):
         i += 1
         x_ks.append(xk)
     return x_ks, i
-
-
-def newton_method_analytical_jac(F, Jf, x_0, tol, max_iterations):
-    i = 0
-    x_k = x_0
-    x_ks = []
-    while norm(F(x_k)) > tol and i < max_iterations:
-        x_ks.append(x_k)
-        delta = solve(Jf(x_k), -F(x_k))
-        x_k = x_k + delta
-        i += 1
-    return x_ks, i
-
 
 def newton_method_num_jac(F, x0, tol, max_iterations):
     i = 0
@@ -78,7 +85,6 @@ def newton_method_num_jac(F, x0, tol, max_iterations):
         xk = xk + delta
         i += 1
     return xk_s, i
-
 
 def falsi_helper(x_ks, f):
     """Return maximim x_k_prime such that f(x_k)f(x_k_prime) < 0"""
@@ -95,7 +101,6 @@ def falsi_helper(x_ks, f):
             x_k_prime = x_ks[i - 1]
     return x_k_prime
 
-
 def regular_falsi(interval, f, tol, max_iters):
     a, b = interval
     x_ks = []
@@ -111,12 +116,13 @@ def regular_falsi(interval, f, tol, max_iters):
         x_ks.append(x_k)
     return x_k
 
-#-----------------------------------------------------------------------------------------------------#
-#--------------------------------------Assignment Code------------------------------------------------#
-#-----------------------------------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------#
+#-----------------------------Assignment Code---------------------------------#
+#-----------------------------------------------------------------------------#
 
 def pressure_system(x):
-    """P(x) Function for approximating x1, x2, x3. p and r are 3-tuples with experimental constants"""
+    """P(x) Function for approximating x1, x2, x3. 
+       p and r are 3-tuples with experimental constants"""
     x1, x2, x3 = x
     p1, p2, p3 = [170.3085, 178.4465, 190.6695]
     r1, r2, r3 = [5/100, 7/100, 10/100]
@@ -125,29 +131,38 @@ def pressure_system(x):
     f3 = x1*exp(x2*r3) + x3*r3 - p3
     return array([f1, f2, f3])
 
-
 def assignment_1():
-    x0 = [1/2, 1/2, 1/2]
     tolerance = 10**-4
-    xspace = np.linspace(-10, 10, 100)
+    xspace = linspace(-10, 10, 100)
+    x0 = [randint(0, 100), randint(0, 100), randint(0, 100)]
 
-    xks, i = newton_method_num_jac(pressure_system, x0, tolerance, 100)
+    converged = False
+    while not converged:
+        try:
+            xks, i = newton_method_num_jac(pressure_system, x0, tolerance, 100)
+        except LinAlgError:
+            x0 = [randint(0, 100), randint(0, 100), randint(0, 100)]
+        else:
+            converged = True
+            print(x0)
+
     x1, x2, x3 = xks[-1]
-    print(xks[-1])
-    f_radius = lambda r: x1*exp(x2*r) + x3*r - 1015 # f(r) One variable function for finding radius
-    f_r_prime = lambda r: x1*x2*exp(x2*r) + x3 # f'(r)
+    # f(r) One variable function for finding radius
+    f_radius = lambda r: x1*exp(x2*r) + x3*r - 1015 
+    # f'(r)
+    f_r_prime = lambda r: x1*x2*exp(x2*r) + x3 
     r_spa = newton_method(f_radius, f_r_prime, 0, tolerance, 100)[0][-1]
-    plt.plot(xspace, [f_radius(r) for r in xspace], label=r"$f(r)=x_1e^{x_2r} + x_3r - 1015$", color="tab:red")
+    frs = [f_radius(r) for r in xspace]
+    plot_values([(xspace, frs, r"$f(r)=x_1e^{x_2r} + x_3r - 1015$")], color="tab:red")
     plt.axvline(r_spa, color="tab:blue", linestyle="dashed", label=r"$r_{spa}$")
     plt.axvline(0, color="tab:gray")
     plt.axhline(0, color="tab:gray")
-    plt.legend(loc="best")
-    print(r_spa)
     plt.show()
 
 
-def recursive_func_sequnce(n, s0, i0, beta, N, gamma):
-    """Helper function for question 2, computes the first n items in the Sn and In sequences"""
+def recursive_func_sequence(n, s0, i0, beta, N, gamma):
+    """Helper function for question 2, computes the first n 
+       items in the Sn and In sequences"""
     Sn = lambda Sn, In: Sn - (beta/N)*Sn*In
     In = lambda Sn, In: In + (beta/N)*Sn*In - gamma*In
     Sns = [s0]
@@ -157,7 +172,6 @@ def recursive_func_sequnce(n, s0, i0, beta, N, gamma):
         Ins.append(In(Sns[i - 1], Ins[i - 1]))
     return Sns, Ins
 
-
 def assignment_2():
     #constants
     N = 157759
@@ -166,20 +180,23 @@ def assignment_2():
     i0 = 3
     s0 = N - i0
     T_max = 48
-    Sns, Ins = recursive_func_sequnce(T_max, s0, i0, beta, N, gamma)
+    Sns, Ins = recursive_func_sequence(T_max, s0, i0, beta, N, gamma)
     print(f"Max number of I_n: {max(Ins)} at week {Ins.index(max(Ins))}")
     print(f"Total num Inf: {sum(Ins)}")
 
     #part a
-    plot_values([(range(len(Sns)), Sns, "")], xlabel=r"$n$", ylabel=r"$S_n$", color="tab:green")
+    plot_values([(range(len(Sns)), Sns, "")],
+               xlabel=r"$n$", ylabel=r"$S_n$", color="tab:green")
     plt.show()
-    plot_values([(range(len(Ins)), Ins, "")], xlabel=r"$n$", ylabel=r"$I_n$", color="tab:purple")
+    plot_values([(range(len(Ins)), Ins, "")], 
+               xlabel=r"$n$", ylabel=r"$I_n$", color="tab:purple")
     plt.show()
 
     #part b i
     plots = []
     for v_prop in range(2, 14, 2):
-        Ins_v = recursive_func_sequnce(T_max, (1-v_prop/100)*N-i0, i0, beta, N, gamma)[1]
+        prop = (1-v_prop/100)
+        Ins_v = recursive_func_sequence(T_max, prop*N-i0, i0, beta, N, gamma)[1]
         plots.append((range(len(Ins_v)), Ins_v, f"{v_prop}% vaxination"))
     plot_values(plots, xlabel=r"$n$", ylabel=r"$I_n$")
     plt.show()
@@ -187,15 +204,16 @@ def assignment_2():
     #part b ii
     plots = []
     for bq in range(2, 14, 2):
-        Ins = recursive_func_sequnce(T_max, s0, i0, (1-bq/100)*beta, N, gamma)[1]
-        plots.append((range(len(Ins)), Ins, f"|β - γ| = {abs((1-bq/100)*beta - gamma):.3f}"))
+        prop = (1-bq/100)
+        Ins = recursive_func_sequence(T_max, s0, i0, prop*beta, N, gamma)[1]
+        plots.append((range(len(Ins)), Ins, f"|β - γ| = {abs(prop*beta - gamma):.3f}"))
     plot_values(plots, xlabel=r"$n$", ylabel=r"$I_n$")
     plt.show()
 
 
-
 def mu(gamma_dot, mu_inf_mu_0, lambd, n):
-    """Non-linear function of gamma_dot, the measure of the deformation of the material"""
+    """Non-linear function of gamma_dot, the measure of the deformation 
+       of the material"""
     return mu_inf_mu_0 + (1 - mu_inf_mu_0)*(1 + (lambd*gamma_dot)**2)**((n - 1) / 2)
 
 def assignment_3():
@@ -206,46 +224,61 @@ def assignment_3():
 
     #part b
     y_f = linspace(0, 1, 201)
-    gamma_f = y_f / mu(1, mu_inf_mu_0, lambd, 1) #gamma_dot and n are arbitrary when lambda = 0
-    plot_values([(y_f, gamma_f, "")], r"$y_f$", r"$\dot\gamma_f$", "", "")
+    #gamma_dot and n are arbitrary when lambda = 0
+    gamma_f = y_f / mu(1, mu_inf_mu_0, lambd, 1) 
+    plot_values([(y_f, gamma_f, "")], r"$y_f$", r"$\dot\gamma_f$")
     plt.show()
 
     #part c
     u_N = [trapz(gamma_f[i:], y_f[i:]) for i in range(len(y_f))]
     max_uN = max(u_N)
-    plot_values([(y_f, u_N / max_uN, r"$u(y_f)$")], xlabel=r"$y_f$", ylabel=r"$u(y_f) / \max\{u\}$", color="tab:blue")
+    plot_values([(y_f, u_N / max_uN, r"$u(y_f)$")], 
+                xlabel=r"$y_f$", ylabel=r"$u(y_f) / \max\{u\}$", color="tab:blue")
     plt.show()
 
     #part d
     u_exact = [u(y) for y in y_f]
     error = [abs(u_N[i] - u_exact[i]) for i in range(len(u_exact))]
-    plot_values([(y_f, error, "")], r"$y_f$", r"$|u_N - u|$", "", "", color="tab:green")
+    plot_values([(y_f, error, "")], 
+                r"$y_f$", r"$|u_N - u|$", color="tab:green")
     plt.show()
 
     #part e
     lambd = 10
     n = 1/4
+
+    # plot g
+    g_first = lambda gamma_dot: mu(gamma_dot, mu_inf_mu_0, lambd, n) * gamma_dot
+    gs = [g_first(gamma) for gamma in linspace(-10, 10, 100)]
+    plot_values([(gs, linspace(-10, 10, 100), r"$g(\dot\gamma)$")])
+    plt.show()
+
+    # find a bound on the roots of g
+    g_last = lambda gamma_dot: mu(gamma_dot, mu_inf_mu_0, lambd, n) * gamma_dot - 1
+    bound = max(find_sign_changes(g_last, 0, 500, 10**-3))[1] 
+    
+    # find the gamma dots
     tolerance = 10**-8
     max_iterations = 100
-    gamma_dot_func_p = lambda g: mu_inf_mu_0 + (1-mu_inf_mu_0)*(1+(lambd*g)**2)**((n-1)/2) + g*((n-1)/2*(1-mu_inf_mu_0)*((1+(lambd*g)**2)**((n-3)/2))*(2*g*lambd**2)) 
     gamma_f = []
-    for yf_i in y_f: #find gamma dot
-        gamma_dot_func = lambda gamma_dot: mu(gamma_dot, mu_inf_mu_0, lambd, n) * gamma_dot - yf_i
-        gamma_f_i = newton_method(gamma_dot_func,gamma_dot_func_p, 10, tolerance, max_iterations)[0][-1] #regular_falsi((-100, 0), gamma_dot_func, tolerance, max_iterations)
-        gamma_f.append(gamma_f_i)
-    plot_values([(y_f, gamma_f, "")], xlabel=r"$y_f$", ylabel=r"$\dot\gamma$", color="tab:purple")
+    for yf_i in y_f: 
+        g = lambda gamma_dot: mu(gamma_dot, mu_inf_mu_0, lambd, n) * gamma_dot - yf_i
+        gamma_f.append(regular_falsi((0, bound), g, tolerance, max_iterations))
+
+    plot_values([(y_f, gamma_f, "")], 
+                xlabel=r"$y_f$", ylabel=r"$\dot\gamma$", color="tab:purple")
     plt.show()
 
-    u_NN = array([trapz(gamma_f[i:], y_f[i:]) for i in range(len(y_f))]) #finding u(y)
+    # intergate the gamma dots over the yfs
+    u_NN = array([trapz(gamma_f[i:], y_f[i:]) for i in range(len(y_f))])
     max_uNN = max(u_NN)
-    plot_values([(y_f, u_NN / max_uNN, "")], xlabel=r"$y_f$", ylabel=r"$u(y_f) / \max\{u\}$", color="tab:orange")
+    plot_values([(y_f, u_NN / max_uNN, "")], 
+                xlabel=r"$y_f$", ylabel=r"$u(y_f) / \max\{u\}$", color="tab:orange")
     plt.show()
 
-    plot_values([(y_f, u_N/ max_uN, "Newtonian"), (y_f, u_NN / max_uNN, "Non Newtonian")], xlabel=r"$y_f$", ylabel=r"$u(y)$")
+    plot_values([(y_f, u_N/ max_uN, "Newtonian"), 
+                (y_f, u_NN / max_uNN, "Non Newtonian")], 
+                xlabel=r"$y_f$", ylabel=r"$u(y_f) / \max\{u\}$")
     plt.show()
-
-
-
-
 
 assignment_3()
