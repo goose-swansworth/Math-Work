@@ -1,5 +1,6 @@
 from datetime import time
 from multiprocessing.connection import wait
+from re import X
 from numpy import array, exp, cos, sin, zeros, pi, linspace, arange
 from scipy.integrate import odeint
 from math import ceil
@@ -58,9 +59,7 @@ def implicit_method(phi, h, t0, t_final, y0, true_soln=None, method_name=""):
     for i in range(len(tspace) - 1):
         w[i + 1] = phi(tspace[i], w[i], h)
     end = perf_counter()
-    if true_soln:
-        print_method_info(method_name, h, tspace, w, true_soln, end - start)
-    return tspace, w
+    return tspace, w, end - start
 
 
 def heun_method(f, h, t0, t_final, y0, n, true_soln=None):
@@ -93,35 +92,55 @@ def question2():
     forward_euler(f, 0.1, 0, 1, 1, y)
     forward_euler(f, 0.05, 0, 1, 1, y)
 
+def question3():
+    f = lambda y, t: (2/t)*y + (t**2)*exp(t)
+    y = lambda t: (t**2)*(exp(t) - exp(1))
+    phi1 = lambda t, w, h: ((t + h)/(t - h))*(w + (h*(t + h)**2)*exp(t+h))
+    phi2 = lambda t, w, h: ((t+h)/t)*(w + (h/t)*w + (h/2)*(t**2)*exp(t) + exp(t+h)*(h/2)*(t+h)**2)
+    h = 0.05
+    t0, tf = 1, 2
+    y0 = 0
+    tspace = arange(t0, tf + h, h)
+    y_true = array([y(t) for t in tspace])
+    w = forward_euler(f, h, t0, tf, y0, 1)[1]
+    w1 = implicit_method(phi1, h, t0, tf, y0)[1]
+    w3 = heun_method(f, h, t0, tf, y0, 1)[1]
+    w3 = implicit_method(phi2, h, t0, tf, y0)[1]
+    plot_values([(tspace, y_true, "y(t)"), (tspace, w, "Forward Euler"),
+                                           (tspace, w1, "Backward Euler"),
+                                           (tspace, w3, "Heun Method"), 
+                                           (tspace, w3, "Crank-Nicolson")], xlabel="t", ylabel="w")
+    plt.show()
+
+
+
 
 def f_oscillator(w, t):
     """f Function for problem 5, t is the current time value and w is a 2d column vector [w1, w2]^T"""
     return array([w[1], -sin(w[0])])
 
-
 def question5(method):
-    h = 0.05
+    h = 0.1
     t0, tf = (0, 6*pi)
     plots = []
+    errors = 0
+    times = 0
     for k in [-1, 0, 1]:
         y0 = [pi/10, k]
         if method == "Euler":
             t, w, time = forward_euler(f_oscillator, h, t0, tf, y0, 2)
             true_soln = odeint(f_oscillator, y0, t)
-            plots.append( (t, w[:,0], r"$y_0=(\frac{\pi}{10},$" + f"{k}" + r"$)$") )
-            print(f"max error = {np.max(np.abs(true_soln - w)):.5f}", f"k={k}")
         else:
             t, w, time = heun_method(f_oscillator, h, t0, tf, y0, 2)
             true_soln = odeint(f_oscillator, y0, t)
-            plots.append( (t, w[:,0], r"$y_0=(\frac{\pi}{10},$" + f"{k}" + r"$)$") )
-            print(f"max error = {np.max(np.abs(true_soln - w)):.5f}", f"k={k}")
-
-    print(f"{method}: Time taken: {time:.5f}")
+        plots.append( (t, w[:,0], r"$y_0=(\frac{\pi}{10},$" + f"{k}" + r"$)$") )
+        errors += np.max(np.abs(true_soln - w))
+        times += time
+    
+    print(f"Average max error = {errors/3:.5f}")
+    print(f"{method}: Average time taken: {(time/3)*1000:.2f}ms")
     plot_values(plots, xlabel="t", ylabel="y(t)", title=method)
     plt.grid()
     plt.show()
 
-
-
-question5("Euler")
-question5("Heun")
+question3()
