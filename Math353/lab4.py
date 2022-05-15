@@ -101,19 +101,22 @@ def question3():
     t0, tf = 1, 2
     y0 = 0
     tspace = arange(t0, tf + h, h)
-    y_true = array([y(t) for t in tspace])
-    w = forward_euler(f, h, t0, tf, y0, 1)[1]
-    w1 = implicit_method(phi1, h, t0, tf, y0)[1]
-    w3 = heun_method(f, h, t0, tf, y0, 1)[1]
-    w3 = implicit_method(phi2, h, t0, tf, y0)[1]
-    plot_values([(tspace, y_true, "y(t)"), (tspace, w, "Forward Euler"),
-                                           (tspace, w1, "Backward Euler"),
-                                           (tspace, w3, "Heun Method"), 
-                                           (tspace, w3, "Crank-Nicolson")], xlabel="t", ylabel="w")
+    w = heun_method(f, h, t0, tf, y0, 1)[1]
+    # w1 = implicit_method(phi1, h, t0, tf, y0)[1]
+    # w3 = heun_method(f, h, t0, tf, y0, 1)[1]
+    # w3 = implicit_method(phi2, h, t0, tf, y0)[1]
+
+    # plot_values([(tspace, y_true, "y(t)"), (tspace, w, "w(t)"), (tspace, np.abs(y_true - w[:,0]), "Error")], xlabel="t")
+    # plt.show()
+
+    hs = arange(0.001, 3, 0.001)
+    errors = zeros(len(hs))
+    for i in range(len(hs)):
+        t, w = forward_euler(f, hs[i], t0, tf, y0, 1)[:2]
+        y_true = array([y(t) for ti in t])
+        errors[i] = np.max(np.abs(y_true - w[:,0]))
+    plot_values([(np.log(hs), np.log(errors), "")], xlabel="h", ylabel="Max Error")
     plt.show()
-
-
-
 
 def f_oscillator(w, t):
     """f Function for problem 5, t is the current time value and w is a 2d column vector [w1, w2]^T"""
@@ -143,4 +146,3 @@ def question5(method):
     plt.grid()
     plt.show()
 
-question3()
