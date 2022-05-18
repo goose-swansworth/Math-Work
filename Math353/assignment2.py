@@ -34,6 +34,7 @@ def heun_method(f, h, t0, t_final, y0, args, n):
     w = np.zeros((len(t), n))
     w[0] = y0
     for i in range(len(t) - 1):
+        print(t[i])
         w_tilde = w[i] + h * f(w[i], t[i], *args)
         w[i + 1] = w[i] + h/2 * (f(w[i], t[i], *args) + f(w_tilde, t[i + 1], *args))
     return t, w
@@ -66,20 +67,24 @@ def read_soln_file(filename):
 
 def part_1():
     """Create required plots for part 1 of assignment"""
-    lambd, beta0, beta1, gamma, sigma = 0.02, 1250, 0, 73, 45.625
+    lambd, beta0, beta1, gamma, sigma = 0.02, 1250, 0.2, 73, 45.625
     h = 10**-4
     w0 = [0.9, 0.05, 0.05]
     t0, tf = 0, 100
     args = (lambd, beta0, beta1, gamma, sigma)
     #t, w = heun_method(SEIR_function, h, t0, tf, w0, args, 3)
-    S, E, I = read_soln_file("part1_a.txt")
-    t = np.arange(t0, tf + h, h)
-    
 
-    plot_values([(t, S, "S(t)"), (t, E, "E(t)"), (t, I, "I(t)")], xlabel="t")
+    #write_soln_file("part1_c.txt", t, w)
+
+    S, E, I = read_soln_file("part1_c.txt")
+    t = np.arange(t0, tf + h, h)
+    index = m.floor(len(t) * 0.6)
+
+    plot_values([(t, S, "S(t)"), (t, E, "E(t)"), (t, I, "I(t)")], xlabel="t", xlim=(0,1))
+    plt.grid()
     plt.show()
     axes = plt.figure().add_subplot(projection='3d')
-    index = m.floor(len(t) * 0.6)
+    
     axes.plot(S[index:], E[index:], I[index:])
     axes.set_xlabel("S")
     axes.set_ylabel("E")
@@ -87,6 +92,6 @@ def part_1():
     plt.show()
 
 
-read_soln_file("part1_a.txt")
+part_1()
 
 
