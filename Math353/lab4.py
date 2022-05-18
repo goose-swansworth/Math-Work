@@ -1,6 +1,3 @@
-from datetime import time
-from multiprocessing.connection import wait
-from re import X
 from numpy import array, exp, cos, sin, zeros, pi, linspace, arange
 from scipy.integrate import odeint
 from math import ceil
@@ -146,3 +143,34 @@ def question5(method):
     plt.grid()
     plt.show()
 
+def lorenz(w, t):
+    sigma = 10
+    beta = 8/3
+    pho = 28
+    x, y, z = w
+    dxdt = sigma * (y - x)
+    dydt = x * (pho - z) - y
+    dzdt = x * y - beta * z
+    return array([dxdt, dydt, dzdt])
+
+def question6():
+    y0 = [1, 1, 1]
+    t0, tf = 0, 100
+    h = 0.01
+    w = heun_method(lorenz, h, t0, tf, y0, 3)[1]
+    x, y, z = w[:, 0], w[:, 1], w[:, 2]
+    axes = plt.figure().add_subplot(projection='3d')
+    axes.plot(x, y, z, label=f"y0={y0}")
+    axes.set_xlabel("x")
+    axes.set_ylabel("y")
+    axes.set_zlabel("z")
+    plt.legend(loc="best")
+    plt.show()
+    # print(f"y0={y0} [x, y, z](100) = {w[-1]}")
+    # y0 = [1 + 10**-5, 1, 1]
+    # w = heun_method(lorenz, h, t0, tf, y0, 3)[1]
+    # print(f"y0={y0} [x, y, z](100) = {w[-1]}")
+
+
+
+question6()
