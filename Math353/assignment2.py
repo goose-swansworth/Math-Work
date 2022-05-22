@@ -1,23 +1,20 @@
 import matplotlib.pyplot as plt
+import matplotx
 import numpy as np
-from  numpy.linalg import solve
 import math as m
-from math353 import plot_values
+from  numpy.linalg import solve
 
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['mathtext.fontset'] = 'cm'
-plt.style.use('ggplot')
+plt.style.use(matplotx.styles.ayu["light"])
 
 def plot_values(plot_tups, xlabel="", ylabel="", title="",
-                color=None, xlim=None, ylim=None):
+                color=None, xlim=None, ylim=None, xticks=None, yticks=None):
     """General plotting function"""
     axes = plt.axes()
     for tup in plot_tups:
         x, y, label = tup
-        if color is not None:
-            axes.plot(x, y, label=label, color=color)
-        else:
-            axes.plot(x, y, label=label)
+        axes.plot(x, y, label=label, color=color)
     axes.set_xlabel(xlabel)
     axes.set_ylabel(ylabel)
     axes.set_title(title)
@@ -25,7 +22,16 @@ def plot_values(plot_tups, xlabel="", ylabel="", title="",
         axes.set_xlim(xlim)
     if ylim is not None:
         axes.set_ylim(ylim)
-    plt.legend(loc="best")
+    if xticks is not None:
+        ticks, labels = xticks
+        axes.set_xticks(ticks)
+        axes.set_xticklabels(labels)
+    if yticks is not None:
+        ticks, labels = yticks
+        axes.set_yticks(ticks)
+        axes.set_yticklabels(labels)
+    plt.legend(loc="best", fontsize="large", framealpha=0.5)
+    axes.grid(True)
     return axes
 
 def heun_method(f, h, t0, t_final, y0, args, n):
@@ -68,33 +74,31 @@ def read_soln_file(filename):
 
 
 def part_1():
-    """Create required plots for part 1 of assignment"""
-    lambd, beta0, beta1, gamma, sigma = 0.02, 1250, 0, 73, 45.625
+    """Solve the system in (1) and create the required plots"""
+    λ, β0, β1, γ, σ = 0.02, 1250, 0, 73, 45.625
     h = 10**-4
     w0 = [0.9, 0.05, 0.05]
     t0, tf = 0, 100
-    args = (lambd, beta0, beta1, gamma, sigma)
-    #t, w = heun_method(SEIR_function, h, t0, tf, w0, args, 3)
-
-    #write_soln_file("part1_a.txt", t, w)
-
+    args = (λ, β0, β1, γ, σ)
     S, E, I = read_soln_file("part1_c.txt")
     t = np.arange(t0, tf + h, h)
     index = m.floor(len(t) * 0.6)
+    xticks = range(0, 110, 10)
+    yticks = [round(x, 2) for x in np.linspace(0, 0.2, 10)]
 
-    plot_values([(t, S, "S(t)"), (t, E, "E(t)"), (t, I, "I(t)")], xlabel="t")
-    plt.grid()
+    plot_values([(t, S, "S(t)"), (t, E, "E(t)"), (t, I, "I(t)")], xlabel="t", xticks=(xticks, xticks), yticks=(yticks, yticks), ylim=(0, 0.2))
     plt.show()
     axes = plt.figure().add_subplot(projection='3d')
     
-    axes.plot(S[index:], E[index:], I[index:])
+    axes.plot(S[index:], E[index:], I[index:], color="tab:purple")
     axes.set_xlabel("S")
     axes.set_ylabel("E")
     axes.set_zlabel("I")
-    plt.show()
+    plt.savefig("part_c_trajectory", dpi=400)
 
 
 def part_2():
+    """Create the required plots for part 2 of assignment"""
     u = lambda x: np.sin(2*x)
     u_prime = lambda x: 2*np.cos(2*x)
     diff_func = lambda u, x, h: (u(x - 2*h) -4*u(x - h) + 3*u(x)) / (2*h)
@@ -105,10 +109,11 @@ def part_2():
     for i in range(len(h_values)):
         error[i] = abs(u_prime(1) - diff_func(u, 1, h_values[i]))
 
-    plot_values([(np.log(h_values), np.log(error), "")], xlabel="h", ylabel=r"$|u'(1) - \tilde{u}'(1)}|$")
+    plot_values([(np.log(h_values), np.log(error), "")], xlabel="h", ylabel=r"$u'(1) - \tilde{u}'(1)}$")
     plt.show()
 
 def build_matrix(n, h, b):
+    """Create the (n-1) by (n-1) matrix of coefficients for solving the BVP in (3)"""
     A = np.zeros((n-1, n-1))
     for i in range(n - 1):
         xi = (i + 1)*h
@@ -126,6 +131,7 @@ def build_matrix(n, h, b):
 
 
 def build_rhs_vector(n, h, a, b):
+    """Create the column used in the linear system in (3)"""
     B = np.zeros((n - 1, 1))
     for i in range(n - 1):
         xi = (i + 1)*h
@@ -138,15 +144,40 @@ def build_rhs_vector(n, h, a, b):
     return B
 
 
-
-def part_3():
-    n =  6#round(1 / 0.01)
-    s = lambda x: 1
-    s_prime = lambda x: 0
+def solve_bvp(h, n, s, s_prime):
+    """Solve the BVP in (3) with the given s(x)"""
     a = lambda x: (-6*s_prime(x)) / (s(x))**3
     b = lambda x: (-3*s_prime(x)) / (s(x))
-    A = build_matrix(n, 0.01, b)
-    B = build_rhs_vector(n, 0.01, a, b)
-    print(solve(A, B))
+    A = build_matrix(n, h, b)
+    B = build_rhs_vector(n, h, a, b)
+    return solve(A, B)
+
+
+
+def part_3():
+    """Solve the BVP in (3) and create the required plots"""
+    h = 0.01
+    n =  round(1 / h)
+    xspace = np.linspace(0, 1, n-1)
+
+    s = lambda x: 1
+    s_prime = lambda x: 0
+    p1 = solve_bvp(h, n, s, s_prime)
+
+    s = lambda x: x/2 + 1
+    s_prime = lambda x: 1/2
+    p2 = solve_bvp(h, n, s, s_prime)
+
+    s = lambda x: x**2/2 + 1
+    s_prime = lambda x: x
+    p3 = solve_bvp(h, n, s, s_prime)
+
+    xticks = [round(x, 1) for x in np.arange(0, 1.1, 0.1)]
+    yticks = [round(y, 2) for y in np.arange(1, 1.5, 0.05)]
+    plot_values([(xspace, p1, r"$s(x)=1$"),
+                (xspace, p2, r"$s(x)=x/2+1$"),
+                (xspace, p3, r"$s(x)=x^2/2+1$")],
+                xticks=(xticks, xticks), yticks=(yticks, yticks))
+    plt.show()
     
-part_3()
+part_1()
