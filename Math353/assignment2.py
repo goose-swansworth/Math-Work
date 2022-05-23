@@ -15,8 +15,8 @@ def plot_values(plot_tups, xlabel="", ylabel="", title="",
     for tup in plot_tups:
         x, y, label = tup
         axes.plot(x, y, label=label, color=color)
-    axes.set_xlabel(xlabel)
-    axes.set_ylabel(ylabel)
+    axes.set_xlabel(xlabel, fontsize=15)
+    axes.set_ylabel(ylabel, fontsize=15)
     axes.set_title(title)
     if xlim is not None:
         axes.set_xlim(xlim)
@@ -80,22 +80,37 @@ def part_1():
     w0 = [0.9, 0.05, 0.05]
     t0, tf = 0, 100
     args = (λ, β0, β1, γ, σ)
-    S, E, I = read_soln_file("part1_c.txt")
+
+    # Uncomment to generate solution
+    # β1 = 0
+    # t, w = heun_method(SEIR_function, h, t0, tf, w0, (λ, β0, β1, γ, σ), 3)
+    # write_soln_file("part_a_soln.txt", t, w)
+
+    # β1 = 0.1
+    # t, w = heun_method(SEIR_function, h, t0, tf, w0, (λ, β0, β1, γ, σ), 3)
+    # write_soln_file("part_b_soln.txt", t, w)
+
+    # β1 = 0.2
+    # t, w = heun_method(SEIR_function, h, t0, tf, w0, (λ, β0, β1, γ, σ), 3)
+    # write_soln_file("part_c_soln.txt", t, w)
+
     t = np.arange(t0, tf + h, h)
     index = m.floor(len(t) * 0.6)
     xticks = range(0, 110, 10)
     yticks = [round(x, 2) for x in np.linspace(0, 0.2, 10)]
+    # for part in ["a", "b", "c"]:#
 
-    plot_values([(t, S, "S(t)"), (t, E, "E(t)"), (t, I, "I(t)")], xlabel="t", xticks=(xticks, xticks), yticks=(yticks, yticks), ylim=(0, 0.2))
-    plt.show()
-    axes = plt.figure().add_subplot(projection='3d')
-    
-    axes.plot(S[index:], E[index:], I[index:], color="tab:purple")
-    axes.set_xlabel("S")
-    axes.set_ylabel("E")
-    axes.set_zlabel("I")
-    plt.savefig("part_c_trajectory", dpi=400)
+    #     S, E, I = read_soln_file(f"part_{part}_soln.txt")
+    #     plot_values([(t, S, "S(t)"), (t, E, "E(t)"), (t, I, "I(t)")], xlabel="t", xticks=(xticks, xticks), yticks=(yticks, yticks), ylim=(0, 0.2))
+    #     plt.savefig(f"part_{part}_tplot", dpi=400)
 
+    #     axes = plt.figure().add_subplot(projection='3d')
+    #     axes.plot(S[index:], E[index:], I[index:], color="tab:purple")
+    #     axes.tick_params(axis="both", labelsize=5)
+    #     axes.set_xlabel("S")
+    #     axes.set_ylabel("E")
+    #     axes.set_zlabel("I")
+    #     plt.savefig(f"part_{part}_trajectory", dpi=400)
 
 def part_2():
     """Create the required plots for part 2 of assignment"""
@@ -109,8 +124,12 @@ def part_2():
     for i in range(len(h_values)):
         error[i] = abs(u_prime(1) - diff_func(u, 1, h_values[i]))
 
-    plot_values([(np.log(h_values), np.log(error), "")], xlabel="h", ylabel=r"$u'(1) - \tilde{u}'(1)}$")
-    plt.show()
+    plot_values([(np.log(h_values), np.log(error), "")],
+                xlabel=r"$log(h)$", ylabel=r"$\log(|u'(1) - \tilde{u}'(1)|)$",
+                xticks=(range(-35, 5, 5), range(-35, 5, 5)),
+                yticks=(range(-25, 5, 5), range(-25, 5, 5)),
+                color="red")
+    plt.savefig("part2_plot", dpi=400)
 
 def build_matrix(n, h, b):
     """Create the (n-1) by (n-1) matrix of coefficients for solving the BVP in (3)"""
@@ -180,4 +199,4 @@ def part_3():
                 xticks=(xticks, xticks), yticks=(yticks, yticks))
     plt.show()
     
-part_1()
+part_2()
