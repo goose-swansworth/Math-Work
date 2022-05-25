@@ -2,23 +2,30 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def plot_values(plot_tups, xlabel="", ylabel="", title="",
-                color=None, xlim=None, ylim=None):
+                color=None, xlim=None, ylim=None,
+                xticks=None, yticks=None):
     """General plotting function"""
     axes = plt.axes()
     for tup in plot_tups:
-        x, y, label = tup
-        if color is not None:
-            axes.plot(x, y, label=label, color=color)
-        else:
-            axes.plot(x, y, label=label)
-    axes.set_xlabel(xlabel)
-    axes.set_ylabel(ylabel)
+        x, y, label, f_str = tup
+        axes.plot(x, y, f_str, label=label, color=color)
+    axes.set_xlabel(xlabel, fontsize=10)
+    axes.set_ylabel(ylabel, fontsize=10)
     axes.set_title(title)
     if xlim is not None:
         axes.set_xlim(xlim)
     if ylim is not None:
         axes.set_ylim(ylim)
-    plt.legend(loc="best")
+    if xticks is not None:
+        ticks, labels = xticks
+        axes.set_xticks(ticks)
+        axes.set_xticklabels(labels)
+    if yticks is not None:
+        ticks, labels = yticks
+        axes.set_yticks(ticks)
+        axes.set_yticklabels(labels)
+    plt.legend(loc="best", framealpha=0.5)
+    axes.grid(True)
     return axes
 
 

@@ -4,12 +4,15 @@ import numpy as np
 import math as m
 from  numpy.linalg import solve
 
+#/--------------------- Plotting ---------------------#/
+
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['mathtext.fontset'] = 'cm'
 plt.style.use(matplotx.styles.ayu["light"])
 
 def plot_values(plot_tups, xlabel="", ylabel="", title="",
-                color=None, xlim=None, ylim=None, xticks=None, yticks=None):
+                color=None, xlim=None, ylim=None,
+                xticks=None, yticks=None):
     """General plotting function"""
     axes = plt.axes()
     for tup in plot_tups:
@@ -33,6 +36,8 @@ def plot_values(plot_tups, xlabel="", ylabel="", title="",
     plt.legend(loc="best", fontsize="large", framealpha=0.5)
     axes.grid(True)
     return axes
+
+#/--------------------- Part 1 ---------------------#/
 
 def heun_method(f, h, t0, t_final, y0, args, n):
     """Use heuns method to solve y' = f(w, t), where f: Rn -> Rn, 
@@ -71,8 +76,6 @@ def read_soln_file(filename):
     in_file = np.loadtxt(filename, delimiter=",", skiprows=1)
     return in_file[:, 0], in_file[:, 1], in_file[:, 2]
 
-
-
 def part_1():
     """Solve the system in (1) and create the required plots"""
     λ, β0, β1, γ, σ = 0.02, 1250, 0, 73, 45.625
@@ -98,19 +101,23 @@ def part_1():
     index = m.floor(len(t) * 0.6)
     xticks = range(0, 110, 10)
     yticks = [round(x, 2) for x in np.linspace(0, 0.2, 10)]
-    # for part in ["a", "b", "c"]:#
+    for part in ["a", "b", "c"]:
+        S, E, I = read_soln_file(f"part_{part}_soln.txt")
+        plot_values([(t, S, "S(t)"), (t, E, "E(t)"), (t, I, "I(t)")],
+                    xlabel="t", xticks=(xticks, xticks), yticks=(yticks, yticks),
+                    ylim=(0, 0.2))
 
-    #     S, E, I = read_soln_file(f"part_{part}_soln.txt")
-    #     plot_values([(t, S, "S(t)"), (t, E, "E(t)"), (t, I, "I(t)")], xlabel="t", xticks=(xticks, xticks), yticks=(yticks, yticks), ylim=(0, 0.2))
-    #     plt.savefig(f"part_{part}_tplot", dpi=400)
+        plt.savefig(f"part_{part}_tplot", dpi=400)
 
-    #     axes = plt.figure().add_subplot(projection='3d')
-    #     axes.plot(S[index:], E[index:], I[index:], color="tab:purple")
-    #     axes.tick_params(axis="both", labelsize=5)
-    #     axes.set_xlabel("S")
-    #     axes.set_ylabel("E")
-    #     axes.set_zlabel("I")
-    #     plt.savefig(f"part_{part}_trajectory", dpi=400)
+        axes = plt.figure().add_subplot(projection='3d')
+        axes.plot(S[index:], E[index:], I[index:], color="tab:purple")
+        axes.tick_params(axis="both", labelsize=5)
+        axes.set_xlabel("S")
+        axes.set_ylabel("E")
+        axes.set_zlabel("I")
+        plt.savefig(f"part_{part}_trajectory", dpi=400)
+
+#/--------------------- Part 2 ---------------------#/
 
 def part_2():
     """Create the required plots for part 2 of assignment"""
@@ -131,6 +138,8 @@ def part_2():
                 color="red")
     plt.savefig("part2_plot", dpi=400)
 
+#/--------------------- Part 3 ---------------------#/
+
 def build_matrix(n, h, b):
     """Create the (n-1) by (n-1) matrix of coefficients for solving the BVP in (3)"""
     A = np.zeros((n-1, n-1))
@@ -148,7 +157,6 @@ def build_matrix(n, h, b):
             A[i, i+1] = 2 - h*b(xi)
     return A
 
-
 def build_rhs_vector(n, h, a, b):
     """Create the column used in the linear system in (3)"""
     B = np.zeros((n - 1, 1))
@@ -162,7 +170,6 @@ def build_rhs_vector(n, h, a, b):
             B[i] = (2*h**2)*a(xi)
     return B
 
-
 def solve_bvp(h, n, s, s_prime):
     """Solve the BVP in (3) with the given s(x)"""
     a = lambda x: (-6*s_prime(x)) / (s(x))**3
@@ -171,32 +178,52 @@ def solve_bvp(h, n, s, s_prime):
     B = build_rhs_vector(n, h, a, b)
     return solve(A, B)
 
-
+def add_endpoints(array, left, right):
+    """Returns a copy of an array with the value left and right added 
+    to the start and end"""
+    n = len(array) + 2
+    out = np.zeros(n)
+    for i in range(n):
+        if i == 0:
+            out[i] = left
+        elif i == n - 1:
+            out[i] = right
+        else:
+            out[i] = array[i - 1]
+    return out
 
 def part_3():
     """Solve the BVP in (3) and create the required plots"""
     h = 0.01
     n =  round(1 / h)
-    xspace = np.linspace(0, 1, n-1)
+    p0, pn = 1, 1
 
-    s = lambda x: 1
-    s_prime = lambda x: 0
-    p1 = solve_bvp(h, n, s, s_prime)
-
-    s = lambda x: x/2 + 1
-    s_prime = lambda x: 1/2
-    p2 = solve_bvp(h, n, s, s_prime)
-
-    s = lambda x: x**2/2 + 1
-    s_prime = lambda x: x
-    p3 = solve_bvp(h, n, s, s_prime)
-
+    xspace = np.linspace(0, 1, n)
     xticks = [round(x, 1) for x in np.arange(0, 1.1, 0.1)]
     yticks = [round(y, 2) for y in np.arange(1, 1.5, 0.05)]
+
+    s1 = lambda x: 1
+    s_prime = lambda x: 0
+    p1 = solve_bvp(h, n-1, s1, s_prime)
+    p1 = add_endpoints(p1, p0, pn)
+
+    s2 = lambda x: x/2 + 1
+    s_prime = lambda x: 1/2
+    p2 = solve_bvp(h, n-1, s2, s_prime)
+    p2 = add_endpoints(p2, p0, pn)
+
+    s3 = lambda x: x**2/2 + 1
+    s_prime = lambda x: x
+    p3 = solve_bvp(h, n-1, s3, s_prime)
+    p3 = add_endpoints(p3, p0, pn)
+   
     plot_values([(xspace, p1, r"$s(x)=1$"),
                 (xspace, p2, r"$s(x)=x/2+1$"),
                 (xspace, p3, r"$s(x)=x^2/2+1$")],
-                xticks=(xticks, xticks), yticks=(yticks, yticks))
-    plt.show()
+                xticks=(xticks, xticks), yticks=(yticks, yticks),
+                xlabel=r"$x$",
+                ylabel=r"$p(x)$")
+
+    plt.savefig("partc_plot", dpi=400)
     
-part_2()
+part_3()
