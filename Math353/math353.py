@@ -9,8 +9,8 @@ def plot_values(plot_tups, xlabel="", ylabel="", title="",
     for tup in plot_tups:
         x, y, label, f_str = tup
         axes.plot(x, y, f_str, label=label, color=color)
-    axes.set_xlabel(xlabel, fontsize=10)
-    axes.set_ylabel(ylabel, fontsize=10)
+    axes.set_xlabel(xlabel, fontsize=15)
+    axes.set_ylabel(ylabel, fontsize=15)
     axes.set_title(title)
     if xlim is not None:
         axes.set_xlim(xlim)
