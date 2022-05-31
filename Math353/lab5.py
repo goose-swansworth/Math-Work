@@ -103,8 +103,8 @@ def question3():
 
         #Upwind Difference
         b = [0 for _ in range(n - 2)]
-        b[-1] = ϵ - h*β
-        A = tri_diagonal(n-1, -ϵ, 2*ϵ-h*β, -ϵ+h*β)
+        b[-1] = ϵ
+        A = tri_diagonal(n-1, -ϵ-h*β, 2*ϵ+h*β, -ϵ)
         u_tilde = solve(A, b)
         u_tilde = np.append(u_tilde, 1)
         u_tilde = np.insert(u_tilde, 0, 0)
@@ -117,25 +117,7 @@ def question3():
     plt.show()
     
 
-
-def input_dict():
-    price_dict = {}
-    running = True
-    while running:
-        input_str = input("-> ")
-        if input_str == "stop":
-            running = False
-        else:
-            name, price = input_str.split(" ")
-            if name not in price_dict:
-                price_dict[name] = price
-    return price_dict
-
-input_dictn = input_dict()
-print(input_dictn)
-print(input_dictn["coke"])
-            
-
+question3()
 
 
 
