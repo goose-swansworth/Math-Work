@@ -117,13 +117,42 @@ def question3():
     plt.show()
     
 
-question3()
+def question4():
+    plots = []
+    ϵ = 1/250
+    β = 1 
+    u = lambda x: (1/(e(β/ϵ) - 1 ))*e((β/ϵ)*x) - 1/((e(β/ϵ)) - 1)
+    for h in [0.01]:
+        n = ceil(1 / h)
+        xspace = np.linspace(0, 1, n)
+
+        #Centered difference
+
+        ϵ = ϵ*(1 + (β*h)/(2*ϵ)) #ϵₕ
+
+        b = [0 for _ in range(n - 2)]
+        b[-1] = -2*ϵ + h*β
+        A = tri_diagonal(n-1, -2*ϵ-h*β, 4*ϵ, -2*ϵ+h*β)
+        u_tilde = solve(A, b)
+        u_tilde = np.append(u_tilde, 1)
+        u_tilde = np.insert(u_tilde, 0, 0)
+        plots.append((xspace, u_tilde, f"Centered", ""))
+
+        #Upwind Difference
+        b = [0 for _ in range(n - 2)]
+        b[-1] = ϵ
+        A = tri_diagonal(n-1, -ϵ-h*β, 2*ϵ+h*β, -ϵ)
+        u_tilde = solve(A, b)
+        u_tilde = np.append(u_tilde, 1)
+        u_tilde = np.insert(u_tilde, 0, 0)
+        plots.append((xspace, u_tilde, f"Upwind", ""))
+
+        if h == 0.01:
+            u_exact = [u(x) for x in xspace]
+            plots.append((xspace, u_exact, "Exact", "-"))
+    plot_values(plots, xlabel=r"$x$", ylabel=r"$u(x)$")
+    plt.show()
 
 
-
-        
-
-
-
-
+question4()
 

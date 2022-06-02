@@ -125,18 +125,22 @@ def part_2():
     u_prime = lambda x: 2*np.cos(2*x)
     diff_func = lambda u, x, h: (u(x - 2*h) -4*u(x - h) + 3*u(x)) / (2*h)
 
-    h_values = np.logspace(-1, -15, 10)
+    h_values = np.logspace(-1, -5, 15)
     error = np.zeros(len(h_values))
 
     for i in range(len(h_values)):
         error[i] = abs(u_prime(1) - diff_func(u, 1, h_values[i]))
+    
+    axes = plt.axes()
+    axes.plot(np.log(h_values), np.log(error), color="red")
+    axes.set_xlabel("h")
+    axes.set_ylabel(r"$|u'(1) - \tilde{u}'(1)|$")
+    axes.grid(True)
+    plt.show()
 
-    plot_values([(np.log(h_values), np.log(error), "")],
-                xlabel=r"$log(h)$", ylabel=r"$\log(|u'(1) - \tilde{u}'(1)|)$",
-                xticks=(range(-35, 5, 5), range(-35, 5, 5)),
-                yticks=(range(-25, 5, 5), range(-25, 5, 5)),
-                color="red")
-    plt.savefig("part2_plot", dpi=400)
+    m, b = np.polyfit(np.log(h_values), np.log(error), 1)
+    print(m, b)
+    #plt.savefig("part2_plot", dpi=400)
 
 #/--------------------- Part 3 ---------------------#/
 
@@ -175,6 +179,7 @@ def solve_bvp(h, n, s, s_prime):
     a = lambda x: (-6*s_prime(x)) / (s(x))**3
     b = lambda x: (-3*s_prime(x)) / (s(x))
     A = build_matrix(n, h, b)
+    print(A)
     B = build_rhs_vector(n, h, a, b)
     return solve(A, B)
 
@@ -226,4 +231,4 @@ def part_3():
 
     plt.savefig("partc_plot", dpi=400)
     
-part_3()
+part_2()
