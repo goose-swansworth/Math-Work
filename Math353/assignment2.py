@@ -231,4 +231,9 @@ def part_3():
 
     plt.savefig("partc_plot", dpi=400)
     
-part_2()
+
+prod_list = [("a", 1/8, 2), ("b", 3, 1/3)]
+for product in prod_list:
+    name, s1, s2 = product
+    print(f"Product Name: {name}, s1:{s1:.2f}, s2:{s2:.2f}")
+

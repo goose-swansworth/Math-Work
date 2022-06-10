@@ -253,7 +253,10 @@ def question_6():
     plt.show()
 
 
-f = lambda x: np.sin(x) + x - 1
-phi = lambda x: 1 - np.sin(x)
 
-print(fixed_point_iteration(phi, 0.5, 10**-10, 200, f))
+
+f = lambda x: np.exp(-x) - np.sin(x)
+
+xks, i = bisection_method(f, (0, 0.8), 10**(-6), 100)
+print(bisection_iterations(0, 0.8, 10**(-6)))
+print(len(xks), i)

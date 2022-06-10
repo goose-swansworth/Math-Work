@@ -154,5 +154,17 @@ def question4():
     plt.show()
 
 
-question4()
+def gn(x, n):
+    if 0 <= x and x < 1/(2*n):
+        return 2*x*n**2
+    elif 1/(2*n) <= x and x < 1/n:
+        return -2*x*n**2 + 2*n
+    else:
+        return 0
 
+xspace = np.linspace(0, 1, 1000)
+for n in range(1, 11):
+    g = [gn(x, n) for x in xspace]
+    plt.plot(xspace, g, label=f"g{n}")
+    plt.legend(loc="best")
+plt.show()

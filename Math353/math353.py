@@ -145,3 +145,24 @@ def newton_interpolating_poly(nodes, x):
     for m in range(len(nodes)):
         diffs.append(newton_div_diff_wrapper(nodes, 0, m))
     return intrp_poly_with_diffs(nodes, diffs, x)
+
+
+
+def newton_divdiffs_table(nodes):
+    n = len(nodes)
+    table = np.zeros((len(nodes), len(nodes) + 1))
+    for k in range(n):
+        table[k][0] = nodes[k][0]
+        table[k][1] = nodes[k][1]
+    x_index = 0
+    skip_rows = 1
+    for j in range(2, n):
+        for i in range(j - 1, n):
+            table[i][j] = (table[i - 1][j - 1] - table[i][j - 1]) / (table[x_index][0] - table[x_index + skip_rows][0])
+            x_index += 1
+        skip_rows += 1
+        x_index = 0
+    print(table)
+
+nodes = [(1, 0.96), (1.2, 0.84), (1.4, 0.68), (1.6, 0.48)]
+newton_divdiffs_table(nodes)
