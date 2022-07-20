@@ -82,4 +82,18 @@ def question_4():
     time_series_plot(x, t, "-")
 
 
-question_4()
+def question_5():
+    f = lambda x, t, r: r*x - x**3
+    x0 = 1
+    t0, tf = 0, 10
+    h = 0.01
+    r_range = np.linspace(-5, 5, 5)
+    plots = []
+    for r in r_range:
+        t, x, = solve_ode(f, (r,), t0, tf, h, x0)
+        tup = t, x, f"r={r:.2f}", "-"
+        plots.append(tup)
+    plot_values(plots, xlabel="t", ylabel="x")
+    plt.show()
+
+question_5()
